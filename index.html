@@ -402,7 +402,7 @@ function renderFeat(){
     <div class="big">${fmtPrice(p)}</div></div>
     <div><h3>${esc(p.addr.split(",")[0])}</h3>
     <div class="meta">${esc(zone(p))}${p.beds?" · "+p.beds+" "+bl(p):""}${p.baths?" · "+p.baths+" "+ba(p):""}${p.sqft?" · "+p.sqft+" "+t("sqft"):""}</div>
-    <div class="go">${t("view")} →</div></div></a>`).join("");
+    </div></a>`).join("");
 }
 function renderGrid(){
   const z=document.getElementById("fz").value, ty=document.getElementById("ft").value, so=document.getElementById("fs").value;
@@ -415,7 +415,7 @@ function renderGrid(){
     <h3>${esc(p.addr.split(",")[0])}</h3>
     <div class="zone">${esc(p.addr.split(",").slice(1).join(",").trim())}</div>
     <div class="specs">${specs(p)}</div>
-    <div class="acts"><a class="btn btn-primary" href="${mailto(p)}">${t("ask")}</a><a class="btn btn-ghost" href="${p.url}" target="_blank" rel="noopener">${t("view")}</a></div>
+    <div class="acts"><a class="btn btn-primary" href="${mailto(p)}">${t("ask")}</a></div>
    </article>`).join("");
   document.getElementById("cnt").textContent=`${t("showing")} ${list.length} ${t("of")} ${PROPS.length}`;
   drawPins(list);
