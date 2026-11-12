@@ -6,6 +6,7 @@
 <meta name="robots" content="noindex">
 <title>Fortune Real Estate Services | Miami Broker, Brickell</title>
 <meta name="description" content="Brickell-based broker serving buyers and sellers across Miami. Recent closings, ten neighborhoods and direct contact with Oswald Gonzalez.">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <link rel="icon" href="assets/logo.webp" type="image/webp">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -111,6 +112,21 @@ section.s{padding:clamp(72px,10vw,140px) 0}
 .specs span{color:var(--muted)}
 .acts{display:flex;flex-wrap:wrap;gap:10px;margin-top:auto}
 .acts .btn{min-height:46px;padding:0 18px;font-size:.85rem;flex:1 1 auto}
+.split{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:22px;align-items:start}
+.split .grid{grid-template-columns:repeat(auto-fill,minmax(280px,1fr));max-height:calc(100vh - 120px);overflow-y:auto;padding-right:6px}
+.split .card.lg{grid-column:auto;padding:28px}
+.split .card.lg .price{font-size:2.4rem}
+#map{height:calc(100vh - 120px);min-height:460px;position:sticky;top:90px;border:1px solid var(--line);background:var(--bg2)}
+.card.hl{border-color:var(--brand-hi);box-shadow:0 0 0 1px var(--brand-hi)}
+.pill.mls{border-color:var(--accent);color:var(--accent)}
+.pin{background:var(--bg);color:var(--brand-hi);border:1px solid var(--brand);border-radius:3px;font:700 12px var(--sans);padding:3px 7px;white-space:nowrap;transform:translate(-50%,-100%);display:inline-block;box-shadow:0 2px 8px rgba(0,0,0,.5)}
+.pin.sold{background:var(--brand);color:#120d08}.pin.on{background:var(--brand-hi);color:#120d08}
+.vt{display:none;gap:0;margin-bottom:18px}
+.vt button{flex:1;min-height:46px;background:var(--bg2);color:var(--muted);border:1px solid var(--line);font:600 .85rem var(--sans);letter-spacing:.1em;cursor:pointer}
+.vt button[aria-pressed=true]{background:var(--brand);color:#120d08}
+@media(max-width:1000px){.split{grid-template-columns:1fr}.vt{display:flex}.split .grid{max-height:none;overflow:visible}#map{height:70vh;position:static}.split.showmap .grid{display:none}.split:not(.showmap) #map{display:none}}
+.leaflet-tile-pane{filter:invert(1) hue-rotate(180deg) brightness(.85) contrast(.95) saturate(.6)}
+.leaflet-container{font-family:var(--sans)}
 .note{margin-top:30px;color:var(--muted);font-size:.85rem;max-width:70ch}
 
 /* neighborhoods */
@@ -203,7 +219,7 @@ footer img{width:64px;height:64px}
 </section>
 
 <div class="stats"><div class="wrap">
-  <div class="stat"><b id="st-total">0</b><span data-i18n="st_total">Closings shown</span></div>
+  <div class="stat"><b id="st-total">0</b><span data-i18n="st_total">Properties</span></div>
   <div class="stat"><b id="st-sold">0</b><span data-i18n="st_sold">Sales</span></div>
   <div class="stat"><b id="st-lease">0</b><span data-i18n="st_lease">Leases</span></div>
   <div class="stat"><b>10</b><span data-i18n="st_nb">Neighborhoods</span></div>
@@ -224,19 +240,20 @@ footer img{width:64px;height:64px}
   <div class="wrap">
     <div class="sh rv">
       <div><div class="eyebrow" data-i18n="cat_eyebrow">Full portfolio</div>
-      <h2 data-i18n="cat_h">Every closing, in one place.</h2></div>
-      <p data-i18n="cat_p">Sales and leases from the Fortune Real Estate Services portfolio, ordered by price.</p>
+      <h2 data-i18n="cat_h">The full portfolio, on the map.</h2></div>
+      <p data-i18n="cat_p">Closings from the Fortune Real Estate Services portfolio plus top active Miami Beach listings, ordered by price.</p>
     </div>
     <div class="filters rv">
       <label><span data-i18n="f_zone">Area</span>
         <select id="fz"></select></label>
       <label><span data-i18n="f_type">Type</span>
-        <select id="ft"><option value="all" data-i18n="t_all">All</option><option value="Sold" data-i18n="t_sold">Sold</option><option value="Leased" data-i18n="t_leased">Leased</option></select></label>
+        <select id="ft"><option value="all" data-i18n="t_all">All</option><option value="Sold" data-i18n="t_sold">Sold</option><option value="Leased" data-i18n="t_leased">Leased</option><option value="Active" data-i18n="t_active">Active (MLS)</option></select></label>
       <label><span data-i18n="f_sort">Sort by price</span>
         <select id="fs"><option value="desc" data-i18n="s_desc">High to low</option><option value="asc" data-i18n="s_asc">Low to high</option></select></label>
       <div class="count" id="cnt" aria-live="polite"></div>
     </div>
-    <div class="grid" id="grid"></div>
+    <div class="vt" role="group" aria-label="View"><button type="button" id="vl" aria-pressed="true" data-i18n="v_list">List</button><button type="button" id="vm" aria-pressed="false" data-i18n="v_map">Map</button></div>
+    <div class="split" id="split"><div class="grid" id="grid"></div><div id="map" role="region" aria-label="Map"></div></div>
     <p class="note" data-i18n="cat_note">Prices for leases are monthly rent. Details are taken from each original listing page.</p>
   </div>
 </section>
@@ -307,21 +324,23 @@ footer img{width:64px;height:64px}
 
 <a class="btn btn-primary float" href="tel:+13055874200" data-i18n="cta_call_short">Call now</a>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
 <script>
-const PROPS = [{"url": "https://fortunerealestateservices.com/properties/1167-nw-2nd-st-1167-florida-city-fl-33034-9a730f8efbba88aaa1144eae12e59132", "price": "$3,300/mo", "addr": "1167 NW 2nd St # 1167, Florida City, FL 33034", "beds": "5", "baths": "5", "sqft": "1,902", "status": "Leased", "date": "January 15, 2025", "year": "2023", "pool": false}, {"url": "https://fortunerealestateservices.com/properties/1171-nw-2nd-st-florida-city-fl-33034-270b0215426a56783bd6915037ee0e0f", "price": "$3,400/mo", "addr": "1171 NW 2nd St, Florida City, FL 33034", "beds": "5", "baths": "5", "sqft": "1,902", "status": "Leased", "date": "April 15, 2025", "year": "2023", "pool": false}, {"url": "https://fortunerealestateservices.com/properties/1216-jann-avenue-opa-locka-opa-locka-fl-united-states-33054-016492e0e06f6c1a9628f230ab74c6e0", "price": "$2,800/mo", "addr": "1216 Jann Avenue, Opa-Locka, FL 33054", "beds": "3", "baths": "1", "sqft": "2,136", "status": "Leased", "date": "December 16, 2024", "year": "1947", "pool": false}, {"url": "https://fortunerealestateservices.com/properties/1331-nw-131st-st-north-miami-fl-33167-a4a7e61ccdaa0d5823bd873ccfaf5782", "price": "$3,350/mo", "addr": "1331 NW 131st St, North Miami, FL 33167", "beds": "3", "baths": "2", "sqft": "1,308", "status": "Leased", "date": "December 1, 2024", "year": "1955", "pool": false}, {"url": "https://fortunerealestateservices.com/properties/13890-nw-5th-ave-north-miami-fl-33168-121296852bce812d4fbb8e5df182b006", "price": "$2,550/mo", "addr": "13890 NW 5th Ave, North Miami, FL 33168", "beds": "2", "baths": "1", "sqft": "750", "status": "Leased", "date": "January 21, 2026", "year": "1950", "pool": false}, {"url": "https://fortunerealestateservices.com/properties/14900-nw-16th-drive-miami-fl-us-33167-0aa0b8b74d25e3d6c7d84648fdeb5e71", "price": "$425,000", "addr": "14900 NW 16th Drive, Miami, FL 33167", "beds": "2", "baths": "1", "sqft": "822", "status": "Sold", "date": "April 18, 2025", "year": "1947", "pool": false}, {"url": "https://fortunerealestateservices.com/properties/1518-nw-65th-st-0-miami-fl-33147-63262fa0ae6cf2600e8b5206f7a9b09a", "price": "$2,900/mo", "addr": "1518 NW 65th St # 0, Miami, FL 33147", "beds": "3", "baths": "2", "sqft": "1,196", "status": "Leased", "date": "May 18, 2026", "year": "1984", "pool": false}, {"url": "https://fortunerealestateservices.com/properties/17240-nw-52nd-ave-miami-gardens-fl-33055-18108c25344f0a55cf981ff020db4c2f", "price": "$2,200/mo", "addr": "17240 NW 52nd Ave, Miami Gardens, FL 33055", "beds": "2", "baths": "1", "sqft": "2,193", "status": "Leased", "date": "August 5, 2025", "year": "1970", "pool": false}, {"url": "https://fortunerealestateservices.com/properties/1783-lauderdale-manor-dr-fort-lauderdale-fl-33311-557ebec09434595c825575cb50133852", "price": "$3,100/mo", "addr": "1783 Lauderdale Manor Drive, Fort Lauderdale, FL 33311", "beds": "3", "baths": "2", "sqft": "925", "status": "Leased", "date": "June 30, 2025", "year": "1958", "pool": false}, {"url": "https://fortunerealestateservices.com/properties/1996-rutland-street-opa-locka-opa-locka-fl-united-states-33054-c179be9bc37ccdb3b747b21475f7bbff", "price": "$3,000/mo", "addr": "1996 Rutland Street, Opa-Locka, FL 33054", "beds": "6", "baths": "2", "sqft": null, "status": "Leased", "date": "December 27, 2025", "year": "1949", "pool": false}, {"url": "https://fortunerealestateservices.com/properties/2025-washington-ave-1-opa-locka-unit-1-opa-locka-fl-33054-181879a2517a2fd793287c68e1da5814", "price": "$2,000/mo", "addr": "2025 Washington Ave # 1, Opa-Locka, FL 33054", "beds": "2", "baths": "1", "sqft": "700", "status": "Leased", "date": "May 10, 2024", "year": "1959", "pool": false}, {"url": "https://fortunerealestateservices.com/properties/2036-nw-97th-st-miami-fl-33147-06449f266b872d481e863cedd2cc0840", "price": "$3,000/mo", "addr": "2036 NW 97th St, Miami, FL 33147", "beds": "3", "baths": "2", "sqft": "1,079", "status": "Leased", "date": "April 15, 2025", "year": "1954", "pool": false}, {"url": "https://fortunerealestateservices.com/properties/2103-nw-57th-st-1-miami-fl-33142-0878fe75001a2fd469e431902434d3e6", "price": "$2,600/mo", "addr": "2103 NW 57th St # 1, Miami, FL 33142", "beds": "3", "baths": "1", "sqft": "1,172", "status": "Leased", "date": "February 28, 2025", "year": "1936", "pool": false}, {"url": "https://fortunerealestateservices.com/properties/2340-nw-1st-st-2340-miami-fl-33125-86114abbbb2f44f96a3604cad1b2c66b", "price": "$3,000/mo", "addr": "2340 NW 1st St # 2340, Miami, FL 33125", "beds": "3", "baths": "2", "sqft": "1,500", "status": "Leased", "date": "August 16, 2025", "year": "1979", "pool": false}, {"url": "https://fortunerealestateservices.com/properties/275-w-68th-st-108-hialeah-fl-33014-1d0a9e71c4ce232b4c09076ef8e19d34", "price": "$2,495/mo", "addr": "275 W 68th St # 108, Hialeah, FL 33014", "beds": "2", "baths": "3", "sqft": "1,085", "status": "Leased", "date": "March 1, 2025", "year": "1982", "pool": false}, {"url": "https://fortunerealestateservices.com/properties/3146-nw-32nd-st-a-miami-fl-33142-f7b51002f5aa11b66aacd98d3e55d5a3", "price": "$3,100/mo", "addr": "3146 NW 32nd St # A, Miami, FL 33142", "beds": "3", "baths": "2", "sqft": "1,150", "status": "Leased", "date": "September 1, 2024", "year": "2022", "pool": false}, {"url": "https://fortunerealestateservices.com/properties/3301-sw-3rd-st-miami-fl-33135-36d61864960164cac725363b735a9d14", "price": "$3,400/mo", "addr": "3301 SW 3rd St, Miami, FL 33135", "beds": "3", "baths": "2", "sqft": "1,568", "status": "Leased", "date": "December 26, 2025", "year": "1953", "pool": false}, {"url": "https://fortunerealestateservices.com/properties/4271-nw-5th-st-108-plantation-fl-33317-f0e7d807a019858a2bde7e67e7b95dc6", "price": "$1,450/mo", "addr": "4271 NW 5th St # 108, Plantation, FL 33317", "beds": "1", "baths": "1", "sqft": "650", "status": "Leased", "date": "March 12, 2026", "year": "1968", "pool": false}, {"url": "https://fortunerealestateservices.com/properties/4444-nw-23rd-avenue-b-unit-unit-b-miami-fl-united-states-33142-ccd2537189ee7ba95c09153ab6de3a65", "price": "$2,750/mo", "addr": "4444 NW 23rd Avenue # B, Miami, FL 33142", "beds": "3", "baths": "2", "sqft": "1,258", "status": "Leased", "date": "July 1, 2026", "year": "2021", "pool": false}, {"url": "https://fortunerealestateservices.com/properties/45-nw-30th-ave-2-miami-fl-33125-492848c0e5d902652acb4a38be3b536f", "price": "$1,100/mo", "addr": "45 NW 30th Ave # 2, Miami, FL 33125", "beds": null, "baths": "1", "sqft": "300", "status": "Leased", "date": "October 31, 2024", "year": "1949", "pool": false}, {"url": "https://fortunerealestateservices.com/properties/45-nw-30th-ave-3-miami-fl-33125-f8f4cce1bafed600515bda17a3b35bd5", "price": "$1,100/mo", "addr": "45 NW 30th Ave # 3, Miami, FL 33125", "beds": null, "baths": "1", "sqft": "300", "status": "Leased", "date": "October 24, 2024", "year": "1949", "pool": false}, {"url": "https://fortunerealestateservices.com/properties/6630-nw-29-ave-miami-fl-33147-a10507d50cb43cf88de024f88e0646d3", "price": "$2,500/mo", "addr": "6630 NW 29 AVE, Miami, FL 33147", "beds": "3", "baths": "1", "sqft": "1,299", "status": "Leased", "date": "July 17, 2026", "year": "1967", "pool": false}, {"url": "https://fortunerealestateservices.com/properties/6721-simms-street-hollywood-fl-united-states-33024-f05bdffe617e3a1415d4c62268aa1bd1", "price": "$540,000", "addr": "6721 Simms Street, Hollywood, FL 33024", "beds": "3", "baths": "2", "sqft": "1,496", "status": "Sold", "date": "May 27, 2026", "year": "1955", "pool": true}, {"url": "https://fortunerealestateservices.com/properties/754-nw-61st-miami-fl-33127-aa40c4212d08ceefdf54684c44daa687", "price": "$2,900/mo", "addr": "754 NW 61ST, Miami, FL 33127", "beds": "3", "baths": "2", "sqft": "1,144", "status": "Leased", "date": "February 25, 2025", "year": null, "pool": false}];
+const PROPS = [{"url": "https://fortunerealestateservices.com/properties/1167-nw-2nd-st-1167-florida-city-fl-33034-9a730f8efbba88aaa1144eae12e59132", "price": "$3,300/mo", "addr": "1167 NW 2nd St # 1167, Florida City, FL 33034", "beds": "5", "baths": "5", "sqft": "1,902", "status": "Leased", "date": "January 15, 2025", "year": "2023", "pool": false, "lat": 25.449268, "lng": -80.496407, "kind": "closing"}, {"url": "https://fortunerealestateservices.com/properties/1171-nw-2nd-st-florida-city-fl-33034-270b0215426a56783bd6915037ee0e0f", "price": "$3,400/mo", "addr": "1171 NW 2nd St, Florida City, FL 33034", "beds": "5", "baths": "5", "sqft": "1,902", "status": "Leased", "date": "April 15, 2025", "year": "2023", "pool": false, "lat": 25.449266, "lng": -80.496536, "kind": "closing"}, {"url": "https://fortunerealestateservices.com/properties/1216-jann-avenue-opa-locka-opa-locka-fl-united-states-33054-016492e0e06f6c1a9628f230ab74c6e0", "price": "$2,800/mo", "addr": "1216 Jann Avenue, Opa-Locka, FL 33054", "beds": "3", "baths": "1", "sqft": "2,136", "status": "Leased", "date": "December 16, 2024", "year": "1947", "pool": false, "lat": 25.9087241, "lng": -80.24749249999999, "kind": "closing"}, {"url": "https://fortunerealestateservices.com/properties/1331-nw-131st-st-north-miami-fl-33167-a4a7e61ccdaa0d5823bd873ccfaf5782", "price": "$3,350/mo", "addr": "1331 NW 131st St, North Miami, FL 33167", "beds": "3", "baths": "2", "sqft": "1,308", "status": "Leased", "date": "December 1, 2024", "year": "1955", "pool": false, "lat": 25.8943976, "lng": -80.2220596, "kind": "closing"}, {"url": "https://fortunerealestateservices.com/properties/13890-nw-5th-ave-north-miami-fl-33168-121296852bce812d4fbb8e5df182b006", "price": "$2,550/mo", "addr": "13890 NW 5th Ave, North Miami, FL 33168", "beds": "2", "baths": "1", "sqft": "750", "status": "Leased", "date": "January 21, 2026", "year": "1950", "pool": false, "lat": 25.902019, "lng": -80.20758169999999, "kind": "closing"}, {"url": "https://fortunerealestateservices.com/properties/14900-nw-16th-drive-miami-fl-us-33167-0aa0b8b74d25e3d6c7d84648fdeb5e71", "price": "$425,000", "addr": "14900 NW 16th Drive, Miami, FL 33167", "beds": "2", "baths": "1", "sqft": "822", "status": "Sold", "date": "April 18, 2025", "year": "1947", "pool": false, "lat": 25.9107945, "lng": -80.2212327, "kind": "closing"}, {"url": "https://fortunerealestateservices.com/properties/1518-nw-65th-st-0-miami-fl-33147-63262fa0ae6cf2600e8b5206f7a9b09a", "price": "$2,900/mo", "addr": "1518 NW 65th St # 0, Miami, FL 33147", "beds": "3", "baths": "2", "sqft": "1,196", "status": "Leased", "date": "May 18, 2026", "year": "1984", "pool": false, "lat": 25.8340409, "lng": -80.22370029999999, "kind": "closing"}, {"url": "https://fortunerealestateservices.com/properties/17240-nw-52nd-ave-miami-gardens-fl-33055-18108c25344f0a55cf981ff020db4c2f", "price": "$2,200/mo", "addr": "17240 NW 52nd Ave, Miami Gardens, FL 33055", "beds": "2", "baths": "1", "sqft": "2,193", "status": "Leased", "date": "August 5, 2025", "year": "1970", "pool": false, "lat": 25.9303769, "lng": -80.2852758, "kind": "closing"}, {"url": "https://fortunerealestateservices.com/properties/1783-lauderdale-manor-dr-fort-lauderdale-fl-33311-557ebec09434595c825575cb50133852", "price": "$3,100/mo", "addr": "1783 Lauderdale Manor Drive, Fort Lauderdale, FL 33311", "beds": "3", "baths": "2", "sqft": "925", "status": "Leased", "date": "June 30, 2025", "year": "1958", "pool": false, "lat": 26.1455444, "lng": -80.1684607, "kind": "closing"}, {"url": "https://fortunerealestateservices.com/properties/1996-rutland-street-opa-locka-opa-locka-fl-united-states-33054-c179be9bc37ccdb3b747b21475f7bbff", "price": "$3,000/mo", "addr": "1996 Rutland Street, Opa-Locka, FL 33054", "beds": "6", "baths": "2", "sqft": null, "status": "Leased", "date": "December 27, 2025", "year": "1949", "pool": false, "lat": 25.9081425, "lng": -80.2325243, "kind": "closing"}, {"url": "https://fortunerealestateservices.com/properties/2025-washington-ave-1-opa-locka-unit-1-opa-locka-fl-33054-181879a2517a2fd793287c68e1da5814", "price": "$2,000/mo", "addr": "2025 Washington Ave # 1, Opa-Locka, FL 33054", "beds": "2", "baths": "1", "sqft": "700", "status": "Leased", "date": "May 10, 2024", "year": "1959", "pool": false, "lat": 25.9111055, "lng": -80.23366709999999, "kind": "closing"}, {"url": "https://fortunerealestateservices.com/properties/2036-nw-97th-st-miami-fl-33147-06449f266b872d481e863cedd2cc0840", "price": "$3,000/mo", "addr": "2036 NW 97th St, Miami, FL 33147", "beds": "3", "baths": "2", "sqft": "1,079", "status": "Leased", "date": "April 15, 2025", "year": "1954", "pool": false, "lat": 25.8631176, "lng": -80.2318073, "kind": "closing"}, {"url": "https://fortunerealestateservices.com/properties/2103-nw-57th-st-1-miami-fl-33142-0878fe75001a2fd469e431902434d3e6", "price": "$2,600/mo", "addr": "2103 NW 57th St # 1, Miami, FL 33142", "beds": "3", "baths": "1", "sqft": "1,172", "status": "Leased", "date": "February 28, 2025", "year": "1936", "pool": false, "lat": 25.8273172, "lng": -80.2309398, "kind": "closing"}, {"url": "https://fortunerealestateservices.com/properties/2340-nw-1st-st-2340-miami-fl-33125-86114abbbb2f44f96a3604cad1b2c66b", "price": "$3,000/mo", "addr": "2340 NW 1st St # 2340, Miami, FL 33125", "beds": "3", "baths": "2", "sqft": "1,500", "status": "Leased", "date": "August 16, 2025", "year": "1979", "pool": false, "lat": 25.773847, "lng": -80.2339829, "kind": "closing"}, {"url": "https://fortunerealestateservices.com/properties/275-w-68th-st-108-hialeah-fl-33014-1d0a9e71c4ce232b4c09076ef8e19d34", "price": "$2,495/mo", "addr": "275 W 68th St # 108, Hialeah, FL 33014", "beds": "2", "baths": "3", "sqft": "1,085", "status": "Leased", "date": "March 1, 2025", "year": "1982", "pool": false, "lat": 25.8849046, "lng": -80.28884699999999, "kind": "closing"}, {"url": "https://fortunerealestateservices.com/properties/3146-nw-32nd-st-a-miami-fl-33142-f7b51002f5aa11b66aacd98d3e55d5a3", "price": "$3,100/mo", "addr": "3146 NW 32nd St # A, Miami, FL 33142", "beds": "3", "baths": "2", "sqft": "1,150", "status": "Leased", "date": "September 1, 2024", "year": "2022", "pool": false, "lat": 25.8050721, "lng": -80.247393, "kind": "closing"}, {"url": "https://fortunerealestateservices.com/properties/3301-sw-3rd-st-miami-fl-33135-36d61864960164cac725363b735a9d14", "price": "$3,400/mo", "addr": "3301 SW 3rd St, Miami, FL 33135", "beds": "3", "baths": "2", "sqft": "1,568", "status": "Leased", "date": "December 26, 2025", "year": "1953", "pool": false, "lat": 25.7694962, "lng": -80.249997, "kind": "closing"}, {"url": "https://fortunerealestateservices.com/properties/4271-nw-5th-st-108-plantation-fl-33317-f0e7d807a019858a2bde7e67e7b95dc6", "price": "$1,450/mo", "addr": "4271 NW 5th St # 108, Plantation, FL 33317", "beds": "1", "baths": "1", "sqft": "650", "status": "Leased", "date": "March 12, 2026", "year": "1968", "pool": false, "lat": 26.128794, "lng": -80.205246, "kind": "closing"}, {"url": "https://fortunerealestateservices.com/properties/4444-nw-23rd-avenue-b-unit-unit-b-miami-fl-united-states-33142-ccd2537189ee7ba95c09153ab6de3a65", "price": "$2,750/mo", "addr": "4444 NW 23rd Avenue # B, Miami, FL 33142", "beds": "3", "baths": "2", "sqft": "1,258", "status": "Leased", "date": "July 1, 2026", "year": "2021", "pool": false, "lat": 25.8160068, "lng": -80.2345933, "kind": "closing"}, {"url": "https://fortunerealestateservices.com/properties/45-nw-30th-ave-2-miami-fl-33125-492848c0e5d902652acb4a38be3b536f", "price": "$1,100/mo", "addr": "45 NW 30th Ave # 2, Miami, FL 33125", "beds": null, "baths": "1", "sqft": "300", "status": "Leased", "date": "October 31, 2024", "year": "1949", "pool": false, "lat": 25.7733442, "lng": -80.24351349999999, "kind": "closing"}, {"url": "https://fortunerealestateservices.com/properties/45-nw-30th-ave-3-miami-fl-33125-f8f4cce1bafed600515bda17a3b35bd5", "price": "$1,100/mo", "addr": "45 NW 30th Ave # 3, Miami, FL 33125", "beds": null, "baths": "1", "sqft": "300", "status": "Leased", "date": "October 24, 2024", "year": "1949", "pool": false, "lat": 25.7733442, "lng": -80.24351349999999, "kind": "closing"}, {"url": "https://fortunerealestateservices.com/properties/6630-nw-29-ave-miami-fl-33147-a10507d50cb43cf88de024f88e0646d3", "price": "$2,500/mo", "addr": "6630 NW 29 AVE, Miami, FL 33147", "beds": "3", "baths": "1", "sqft": "1,299", "status": "Leased", "date": "July 17, 2026", "year": "1967", "pool": false, "lat": 25.8346706, "lng": -80.24354780000002, "kind": "closing"}, {"url": "https://fortunerealestateservices.com/properties/6721-simms-street-hollywood-fl-united-states-33024-f05bdffe617e3a1415d4c62268aa1bd1", "price": "$540,000", "addr": "6721 Simms Street, Hollywood, FL 33024", "beds": "3", "baths": "2", "sqft": "1,496", "status": "Sold", "date": "May 27, 2026", "year": "1955", "pool": true, "lat": 26.0348378, "lng": -80.2237425, "kind": "closing"}, {"url": "https://fortunerealestateservices.com/properties/754-nw-61st-miami-fl-33127-aa40c4212d08ceefdf54684c44daa687", "price": "$2,900/mo", "addr": "754 NW 61ST, Miami, FL 33127", "beds": "3", "baths": "2", "sqft": "1,144", "status": "Leased", "date": "February 25, 2025", "year": null, "pool": false, "lat": 25.8311548, "lng": -80.20958569999999, "kind": "closing"}, {"url": "https://fortunerealestateservices.com/home-search/listings/5136785273855093829-1420-W-23rd-St", "price": "$110,000,000", "addr": "1420 W 23rd St, Miami Beach, FL 33140", "beds": "9", "baths": "10", "sqft": "10,791", "status": "Active", "date": null, "year": null, "pool": false, "lat": 25.7989627, "lng": -80.1425345, "kind": "mls", "mls": "A12018167"}, {"url": "https://fortunerealestateservices.com/home-search/listings/5136331328918370613-3100-N-Bay-Rd", "price": "$100,000,000", "addr": "3100 N Bay Rd, Miami Beach, FL 33140", "beds": "7", "baths": "9", "sqft": "10,250", "status": "Active", "date": null, "year": null, "pool": false, "lat": 25.8083836, "lng": -80.1381989, "kind": "mls", "mls": "A11820623"}, {"url": "https://fortunerealestateservices.com/home-search/listings/5136220438318507182-2901-Collins-Ave-1602", "price": "$80,000,000", "addr": "2901 Collins Ave # 1602, Miami Beach, FL 33140", "beds": "4", "baths": "5", "sqft": "5,011", "status": "Active", "date": null, "year": null, "pool": false, "lat": 25.8053505, "lng": -80.1242147, "kind": "mls", "mls": "A12059276"}, {"url": "https://fortunerealestateservices.com/home-search/listings/5136276745559541615-10203-Collins-Ave-2801", "price": "$69,500,000", "addr": "10203 Collins Ave # 2801, Bal Harbour, FL 33154", "beds": "6", "baths": "7.5", "sqft": "8,993", "status": "Active", "date": null, "year": null, "pool": false, "lat": 25.895778, "lng": -80.124281, "kind": "mls", "mls": "A11931658"}, {"url": "https://fortunerealestateservices.com/home-search/listings/5136114518519884698-4760-N-Bay-Rd", "price": "$69,500,000", "addr": "4760 N Bay Rd, Miami Beach, FL 33140", "beds": "8", "baths": "7", "sqft": "5,685", "status": "Active", "date": null, "year": null, "pool": false, "lat": 25.8250491, "lng": -80.1351709, "kind": "mls", "mls": "A12106525"}, {"url": "https://fortunerealestateservices.com/home-search/listings/5136690876456666702-58-La-Gorce-Cir", "price": "$68,500,000", "addr": "58 La Gorce Cir, Miami Beach, FL 33141", "beds": "7", "baths": "9", "sqft": "8,805", "status": "Active", "date": null, "year": null, "pool": false, "lat": null, "lng": null, "kind": "mls", "mls": "A12043875"}];
 const NBS = [["Brickell","brickell"],["Miami Beach","miami-beach"],["Coral Gables","coral-gables"],["Coconut Grove","coconut-grove"],["Doral","doral"],["Sunny Isles Beach","sunny-isles-beach"],["Pinecrest","pinecrest"],["North Miami Beach","north-miami-beach"],["Aventura","aventura"],["North Bay Village","north-bay-village"]];
 const I18N = {
  en:{nav_results:"Closings",nav_nb:"Neighborhoods",nav_about:"Oswald",nav_contact:"Contact",
   hero_eyebrow:"Brickell-based broker",hero_h1:"Buying, selling or renting across Miami.",
   hero_lead:"Oswald Gonzalez, Broker and Owner of Fortune Real Estate Services, serves buyers and sellers across ten Miami neighborhoods.",
   cta_call:"Call (305) 587-4200",cta_call_short:"Call now",cta_results:"See recent closings",
-  st_total:"Closings shown",st_sold:"Sales",st_lease:"Leases",st_nb:"Neighborhoods",
+  st_total:"Properties",st_sold:"Sales",st_lease:"Leases",st_nb:"Neighborhoods",
   feat_eyebrow:"Recent results",feat_h:"Top closings, by price",feat_p:"The highest-priced closings from the portfolio. Each card links to its original listing page.",
-  cat_eyebrow:"Full portfolio",cat_h:"Every closing, in one place.",cat_p:"Sales and leases from the Fortune Real Estate Services portfolio, ordered by price.",
+  cat_eyebrow:"Full portfolio",cat_h:"The full portfolio, on the map.",cat_p:"Closings from the Fortune Real Estate Services portfolio plus top active Miami Beach listings, ordered by price.",
   f_zone:"Area",f_type:"Type",f_sort:"Sort by price",t_all:"All",t_sold:"Sold",t_leased:"Leased",s_desc:"High to low",s_asc:"Low to high",all_areas:"All areas",
-  cat_note:"Prices for leases are monthly rent. Details are taken from each original listing page.",
+  cat_note:"Lease prices are monthly rent. MLS entries are active listings in the Miami Beach area published on the original site, not closings by this brokerage. Details come from each original page. Map: © OpenStreetMap contributors.",v_list:"List",v_map:"Map",t_active:"Active (MLS)",active:"MLS · Active",
   nb_eyebrow:"Where we work",nb_h:"Ten Miami neighborhoods.",nb_p:"Each one opens its page on the original site.",
   ab_eyebrow:"About the broker",ab_role:"Broker and Owner, Fortune Real Estate Services",ab_p:"Brickell-based broker serving buyers and sellers across Miami.",ab_lic:"License",ab_off:"Office",ab_team:"Team",
   rev_note:"Excerpts from client reviews on fortunerealestateservices.com, shown in their original wording.",
@@ -333,11 +352,11 @@ const I18N = {
   hero_eyebrow:"Broker con base en Brickell",hero_h1:"Comprar, vender o alquilar en todo Miami.",
   hero_lead:"Oswald Gonzalez, Broker y Propietario de Fortune Real Estate Services, atiende a compradores y vendedores en diez zonas de Miami.",
   cta_call:"Llamar al (305) 587-4200",cta_call_short:"Llamar",cta_results:"Ver cierres recientes",
-  st_total:"Cierres mostrados",st_sold:"Ventas",st_lease:"Alquileres",st_nb:"Zonas",
+  st_total:"Propiedades",st_sold:"Ventas",st_lease:"Alquileres",st_nb:"Zonas",
   feat_eyebrow:"Resultados recientes",feat_h:"Mayores cierres, por precio",feat_p:"Los cierres de mayor precio del portafolio. Cada tarjeta enlaza a su ficha original.",
-  cat_eyebrow:"Portafolio completo",cat_h:"Todos los cierres, en un solo lugar.",cat_p:"Ventas y alquileres del portafolio de Fortune Real Estate Services, ordenados por precio.",
+  cat_eyebrow:"Portafolio completo",cat_h:"El portafolio completo, en el mapa.",cat_p:"Cierres del portafolio de Fortune Real Estate Services y principales anuncios activos de Miami Beach, ordenados por precio.",
   f_zone:"Zona",f_type:"Tipo",f_sort:"Ordenar por precio",t_all:"Todos",t_sold:"Vendido",t_leased:"Alquilado",s_desc:"De mayor a menor",s_asc:"De menor a mayor",all_areas:"Todas las zonas",
-  cat_note:"El precio de los alquileres es la renta mensual. Los datos provienen de cada ficha original.",
+  cat_note:"El precio de los alquileres es la renta mensual. Las entradas MLS son anuncios activos de la zona de Miami Beach publicados en el sitio original, no cierres de esta oficina. Los datos provienen de cada página original. Mapa: © OpenStreetMap contributors.",v_list:"Lista",v_map:"Mapa",t_active:"Activo (MLS)",active:"MLS · Activo",
   nb_eyebrow:"Dónde trabajamos",nb_h:"Diez zonas de Miami.",nb_p:"Cada una abre su página en el sitio original.",
   ab_eyebrow:"Sobre el broker",ab_role:"Broker y Propietario, Fortune Real Estate Services",ab_p:"Broker con base en Brickell que atiende a compradores y vendedores en todo Miami.",ab_lic:"Licencia",ab_off:"Oficina",ab_team:"Equipo",
   rev_note:"Extractos de reseñas de clientes en fortunerealestateservices.com, en su redacción original.",
@@ -351,9 +370,10 @@ try{const s=localStorage.getItem("lang"); if(s==="es"||s==="en") lang=s;}catch(e
 const t=k=>I18N[lang][k]||k;
 const num=p=>parseInt(p.price.replace(/[^\d]/g,""),10);
 const zone=p=>{const parts=p.addr.split(",").map(s=>s.trim());return parts[parts.length-2];};
-const isSold=p=>p.status==="Sold";
+const isSold=p=>p.status==="Sold"; const isRent=p=>p.price.endsWith("/mo");
+const lbl=p=>p.kind==="mls"?t("active"):isSold(p)?t("sold"):t("leased");
 const bl=p=>p.beds==="1"?t("bed1"):t("beds"), ba=p=>p.baths==="1"?t("bath1"):t("baths");
-const fmtPrice=p=>p.price.replace("/mo","")+(isSold(p)?"":" "+t("perMo"));
+const fmtPrice=p=>p.price.replace("/mo","")+(isRent(p)?" "+t("perMo"):"");
 const fmtDate=d=>{if(!d)return"";const dt=new Date(d+" 12:00");return dt.toLocaleDateString(lang==="es"?"es-US":"en-US",{month:"short",year:"numeric"});};
 const sorted=PROPS.slice().sort((a,b)=>num(b)-num(a));
 const esc=s=>s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -371,10 +391,10 @@ function mailto(p){
   return "mailto:fortunerealestateservices@gmail.com?subject="+encodeURIComponent(t("mail_sub")+p.addr)+"&body="+encodeURIComponent(t("mail_body")+p.addr+".");
 }
 function renderFeat(){
-  const top=sorted.slice(0,6);
+  const top=sorted.filter(p=>p.kind==="closing").slice(0,6);
   document.getElementById("track").innerHTML=top.map(p=>`
    <a class="fcard" href="${p.url}" target="_blank" rel="noopener">
-    <div><span class="tag">${isSold(p)?t("sold"):t("leased")}${p.date?" · "+fmtDate(p.date):""}</span>
+    <div><span class="tag">${lbl(p)}${p.date?" · "+fmtDate(p.date):""}</span>
     <div class="big">${fmtPrice(p)}</div></div>
     <div><h3>${esc(p.addr.split(",")[0])}</h3>
     <div class="meta">${esc(zone(p))}${p.beds?" · "+p.beds+" "+bl(p):""}${p.baths?" · "+p.baths+" "+ba(p):""}${p.sqft?" · "+p.sqft+" "+t("sqft"):""}</div>
@@ -385,8 +405,8 @@ function renderGrid(){
   let list=sorted.filter(p=>(z==="all"||zone(p)===z)&&(ty==="all"||p.status===ty));
   if(so==="asc") list=list.slice().reverse();
   document.getElementById("grid").innerHTML=list.map((p,i)=>`
-   <article class="card${i<3?" lg":""}">
-    <div class="top"><span class="pill${isSold(p)?" sold":""}">${isSold(p)?t("sold"):t("leased")}</span><span class="date">${fmtDate(p.date)}</span></div>
+   <article class="card${i<3?" lg":""}" data-i="${PROPS.indexOf(p)}">
+    <div class="top"><span class="pill${isSold(p)?" sold":p.kind==="mls"?" mls":""}">${lbl(p)}</span><span class="date">${fmtDate(p.date)}</span></div>
     <div class="price">${fmtPrice(p)}</div>
     <h3>${esc(p.addr.split(",")[0])}</h3>
     <div class="zone">${esc(p.addr.split(",").slice(1).join(",").trim())}</div>
@@ -394,7 +414,25 @@ function renderGrid(){
     <div class="acts"><a class="btn btn-primary" href="${mailto(p)}">${t("ask")}</a><a class="btn btn-ghost" href="${p.url}" target="_blank" rel="noopener">${t("view")}</a></div>
    </article>`).join("");
   document.getElementById("cnt").textContent=`${t("showing")} ${list.length} ${t("of")} ${PROPS.length}`;
+  drawPins(list);
+  document.querySelectorAll("#grid .card").forEach(c=>{const i=+c.dataset.i;c.addEventListener("mouseenter",()=>hl(i,true));c.addEventListener("mouseleave",()=>hl(i,false));});
 }
+let map=null,layer=null;
+const short=p=>{const n=num(p);return "$"+(n>=1e6?+(n/1e6).toFixed(1)+"M":n>=1e4?Math.round(n/1e3)+"K":+(n/1e3).toFixed(1)+"K")+(isRent(p)?"/mo":"");};
+function drawPins(list){
+  if(!window.L) return;
+  if(!map){map=L.map("map",{scrollWheelZoom:false}).setView([25.85,-80.2],10);
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{attribution:"© OpenStreetMap contributors",maxZoom:18}).addTo(map);layer=L.layerGroup().addTo(map);}
+  layer.clearLayers();const pts=[];
+  list.forEach(p=>{if(p.lat==null)return;const i=PROPS.indexOf(p);
+    const m=L.marker([p.lat,p.lng],{icon:L.divIcon({className:"",html:`<span class="pin${isSold(p)?" sold":""}" id="pin${i}">${short(p)}</span>`,iconSize:[0,0]})}).addTo(layer);
+    m.on("click",()=>{const c=document.querySelector(`#grid .card[data-i="${i}"]`);if(c){c.scrollIntoView({behavior:"smooth",block:"center"});document.querySelectorAll(".card.hl").forEach(x=>x.classList.remove("hl"));c.classList.add("hl");}});
+    pts.push([p.lat,p.lng]);});
+  if(pts.length) map.fitBounds(pts,{padding:[40,40],maxZoom:13});
+}
+function hl(i,on){const el=document.getElementById("pin"+i);if(el)el.classList.toggle("on",on);}
+function setView(m){document.getElementById("split").classList.toggle("showmap",m);document.getElementById("vm").setAttribute("aria-pressed",m);document.getElementById("vl").setAttribute("aria-pressed",!m);if(m&&map)setTimeout(()=>{map.invalidateSize();},50);}
+document.getElementById("vl").onclick=()=>setView(false);document.getElementById("vm").onclick=()=>setView(true);
 function renderZones(){
   const sel=document.getElementById("fz"), cur=sel.value||"all";
   const zs=[...new Set(sorted.map(zone))].sort();
@@ -419,7 +457,7 @@ document.querySelectorAll(".lang button").forEach(b=>b.addEventListener("click",
 
 document.getElementById("st-total").textContent=PROPS.length;
 document.getElementById("st-sold").textContent=PROPS.filter(isSold).length;
-document.getElementById("st-lease").textContent=PROPS.filter(p=>!isSold(p)).length;
+document.getElementById("st-lease").textContent=PROPS.filter(p=>p.status==="Leased").length;
 renderNbs();applyLang();
 
 /* header */
