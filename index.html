@@ -409,7 +409,7 @@ function renderGrid(){
   let list=sorted.filter(p=>(z==="all"||zone(p)===z)&&(ty==="all"||p.status===ty));
   if(so==="asc") list=list.slice().reverse();
   document.getElementById("grid").innerHTML=list.map((p,i)=>`
-   <article class="card${i<3?" lg":""}" data-i="${PROPS.indexOf(p)}">${p.img?`<figure class="ill"><img src="${p.img}" width="900" height="678" loading="${i<2?"eager":"lazy"}" alt="${t("ill_alt")}"><figcaption>${t("ill")}</figcaption></figure>`:""}
+   <article class="card${i<3?" lg":""}" data-i="${PROPS.indexOf(p)}">${(()=>{const im=p.img||`assets/fc-${PROPS.indexOf(p)%6}.webp`;return `<figure class="ill"><img src="${im}" width="900" height="678" loading="${i<2?"eager":"lazy"}" alt="${t("ill_alt")}"><figcaption>${t("ill")}</figcaption></figure>`})()}
     <div class="top"><span class="pill${isSold(p)?" sold":p.kind==="mls"?" mls":""}">${lbl(p)}</span><span class="date">${fmtDate(p.date)}</span></div>
     <div class="price">${fmtPrice(p)}</div>
     <h3>${esc(p.addr.split(",")[0])}</h3>
