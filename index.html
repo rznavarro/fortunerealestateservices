@@ -82,8 +82,7 @@ section.s{padding:clamp(72px,10vw,140px) 0}
 .track{display:flex;gap:28px;padding:0 var(--gut) 90px;will-change:transform}
 .fcard{flex:0 0 min(78vw,460px);min-height:420px;background:linear-gradient(160deg,var(--bg3),#0e0c0a);border:1px solid var(--line);padding:36px;display:flex;flex-direction:column;justify-content:space-between;text-decoration:none;position:relative;scroll-snap-align:start}
 .fcard:hover{border-color:var(--brand)}
-.fcard{min-height:560px}.fcard .fimg{margin:-36px -36px 0;position:relative;overflow:hidden;flex:none}.fcard .fimg img{display:block;width:100%;height:auto;aspect-ratio:16/10;object-fit:cover}.fcard .fimg figcaption{position:absolute;left:10px;bottom:10px;background:rgba(11,10,9,.82);color:var(--text);font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;padding:4px 10px}
-.fcard .big{margin-top:22px}
+.fcard{min-height:0;padding-bottom:28px}.fcard .fimg{margin:-36px -36px 22px;position:relative;overflow:hidden;flex:none}.fcard .fimg img{display:block;width:100%;height:clamp(140px,22vh,250px);object-fit:cover}.fcard .fimg figcaption{position:absolute;left:10px;bottom:10px;background:rgba(11,10,9,.82);color:var(--text);font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;padding:4px 10px}
 .fcard .tag{align-self:flex-start;font-size:.72rem;letter-spacing:.2em;text-transform:uppercase;border:1px solid var(--brand);color:var(--brand-hi);padding:5px 12px}
 .fcard .big{font-family:var(--serif);font-size:clamp(2.6rem,5vw,3.8rem);color:var(--brand-hi);line-height:1;margin-top:22px}
 .fcard h3{font-size:1.6rem;margin:12px 0 6px;font-weight:600}
@@ -397,7 +396,7 @@ function renderFeat(){
   const top=sorted.filter(p=>p.kind==="closing").slice(0,6);
   document.getElementById("track").innerHTML=top.map((p,i)=>`
    <a class="fcard" href="${p.url}" target="_blank" rel="noopener">
-    <figure class="fimg"><img src="assets/fc-${i}.webp" alt="${t("ill_alt")}" loading="lazy" width="800" height="500"><figcaption>${t("ill")}</figcaption></figure>
+    <figure class="fimg"><img src="assets/fc-${i}.webp" alt="${t("ill_alt")}" loading="eager" width="800" height="500"><figcaption>${t("ill")}</figcaption></figure>
     <div><span class="tag">${lbl(p)}${p.date?" · "+fmtDate(p.date):""}</span>
     <div class="big">${fmtPrice(p)}</div></div>
     <div><h3>${esc(p.addr.split(",")[0])}</h3>
@@ -483,6 +482,10 @@ if(!reduce && window.gsap && window.ScrollTrigger && matchMedia("(min-width:901p
   const tr=document.getElementById("track"), sec=document.getElementById("results");
   const dist=()=>Math.max(0,tr.scrollWidth-innerWidth);
   window.__pin=gsap.to(tr,{x:()=>-dist(),ease:"none",scrollTrigger:{trigger:sec,start:"top top",end:()=>"+="+dist(),pin:true,scrub:.6,invalidateOnRefresh:true,anticipatePin:1}});
+  const rf=()=>ScrollTrigger.refresh();
+  tr.querySelectorAll("img").forEach(im=>{if(!im.complete)im.addEventListener("load",rf,{once:true});});
+  window.addEventListener("load",rf);
+  if(document.fonts&&document.fonts.ready)document.fonts.ready.then(rf);
 }
 </script>
 </body>
